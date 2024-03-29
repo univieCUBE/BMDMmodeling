@@ -1,0 +1,321 @@
+---
+title: "tutorial second part"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Welcome to the tutorial, linked with "Computational modelling reveals and predicts flux differences in nucleotide metabolism in IL-4-treated Cyp27a1-KO bone marrow-derived macrophages". This is the second part of the two tutorials: here is an R-related section of the tutorial which is designed to demonstrate downstream processing and vizualization, as can be seen throughout the manuscript, in particular Figures 2E and 4E.
+
+## Load Libraries
+
+
+```{r, echo=T, message=F}
+library(readxl)
+library(ggplot2)
+library(ggrepel)
+library(RColorBrewer)
+library(dplyr)
+library(reshape2)
+library(ggvenn)
+library(VennDiagram)
+library(gridExtra)
+library(ggpubr)
+library(ggallin)
+library(stringr)
+library(magrittr)
+library(pheatmap)
+require(grid)
+library(tidyverse)
+
+```
+
+## Define custom theme
+
+``` {r} 
+
+my.theme <- theme(axis.text = element_text(colour="black", size=15, face = "bold"),
+                  text = element_text(size=16),
+                  panel.background = element_rect(fill = 'gray99',
+                                                  colour = "black",
+                                                  linewidth=0.5),
+                  axis.title.x=  element_text(vjust=-0.45, face = "bold"),
+                  axis.title.y = element_text(vjust=1.2, face = "bold"),
+                  axis.ticks = element_line(colour="black"),
+                  axis.line = element_line(),
+                  panel.grid.major = element_line(colour = "lightgray", linetype="dotted"),
+                  panel.grid.minor = element_line(colour = "lightgray", linetype="dashed"),
+                  legend.text = element_text(size = 14, face = "bold"),
+                  legend.title = element_text(size = 14, face = "bold"))
+```
+
+
+## Read data
+
+`GeneDelFluxSolution` is a dataframe created from the first part of the tutorial that we're importing.
+`ControlRXN`, `LPSRXN` & `IL4RXN` are spreadsheets for each metabolic model, containing reaction accessory information.
+`reactions` is a spreadsheet containing various reaction nomenclature schemes, derived from Chalmers SysBio GitHub page: https://github.com/SysBioChalmers/Mouse-GEM/tree/main/model
+
+Every spreadsheet can be found in `~/spreadsheets` directory on GitHub, therefore please rename absolute paths accordingly.
+
+``` {r}
+
+GeneDelFluxSolution = read_excel('/Users/rokosango/PhD/MetabModelling/MATLAB_scripts_workspaces/Immunometabolism_models/tINIT_models/Models/GeneDelFluxSolution.xlsx',
+                                 sheet = 1)
+names(GeneDelFluxSolution)[1] = "ReactionID"
+
+ControlRXN = read.csv('/Users/rokosango/PhD/MetabModelling/MATLAB_scripts_workspaces/Immunometabolism_models/tINIT_models/OnlyReactionsFromModels/ControlRXN.csv',
+                      header = T)
+LPSRXN = read.csv('/Users/rokosango/PhD/MetabModelling/MATLAB_scripts_workspaces/Immunometabolism_models/tINIT_models/OnlyReactionsFromModels/LPSRXN.csv',
+                  header = T)
+IL4RXN = read.csv('/Users/rokosango/PhD/MetabModelling/MATLAB_scripts_workspaces/Immunometabolism_models/tINIT_models/OnlyReactionsFromModels/IL4RXN.csv',
+                  header = T)
+reactions = read.csv('/Users/rokosango/PhD/MetabModelling/MATLAB_scripts_workspaces/reactions.csv')
+
+```
+
+## Function to prepare Flux Tables
+
+``` {r}
+prepFluxTables = function(FluxTable, allReactions, modelSpecificRxns) {
+  FluxTable$ReactionName = allReactions$rxnRecon3DID[match(FluxTable$ReactionID, allReactions$rxns)]
+  FluxTable$Subsystem = modelSpecificRxns$SUBSYSTEM[match(FluxTable$ReactionID, modelSpecificRxns$ID)]
+  FluxTable$Subsystem = as.factor(FluxTable$Subsystem)
+  FluxTable$Equation = modelSpecificRxns$EQUATION[match(FluxTable$ReactionID, modelSpecificRxns$ID)]
+  return(FluxTable)
+}
+
+```
+
+
+## Prepare Flux Tables
+
+``` {r}
+GeneDelFluxSolution = prepFluxTables(GeneDelFluxSolution, reactions, LPSRXN)
+
+Cyp27a1_df <- GeneDelFluxSolution %>%
+  select(-Wildtype)
+
+Wildtype_df <- GeneDelFluxSolution %>%
+  select(-Cyp27a1_KO)
+
+LPS_Knockout_List <- list(Cyp27a1 = Cyp27a1_df, WT = Wildtype_df)
+
+names(LPS_Knockout_List[[1]])[2] = "Flux"
+names(LPS_Knockout_List[[2]])[2] = "Flux"
+```
+
+
+## Define Function for Relative Contribution with Knockouts
+
+A function that calculates relative flux contribution that can be attributed to each model, for each of the subsystems present in every model. In addition, it calculates flux dispersion with std.deviation and stores the results in dataframe with subsystems ranked in a descending fashion. Optionally, and in order to generate the plot with more clarity, certain pathways can be omitted from the computation. This is a user-based decision, in order to focus on pathways of interest.
+
+``` {r}
+FunRelativeContribWithKnockouts = function(ListModelKnockouts, tissue, description, FilteredDataset=F) {
+  
+  CommonSubsystems = Reduce(intersect, list(ListModelKnockouts[["WT"]]$Subsystem,
+                                            ListModelKnockouts[["Cyp27a1"]]$Subsystem))
+  
+  SummarizedListModelKnockouts = ListModelKnockouts
+  
+  for (i in names(ListModelKnockouts)) {
+    
+    SummarizedListModelKnockouts[[i]] = ListModelKnockouts[[i]] %>%
+      dplyr::group_by(Subsystem) %>%
+      dplyr::summarize(AbsSum = sum(abs(Flux), na.rm = T))
+    
+    SummarizedListModelKnockouts[[i]] = SummarizedListModelKnockouts[[i]] %>%
+      dplyr::filter(!Subsystem == "NA") %>% 
+      dplyr::filter(Subsystem %in% CommonSubsystems)
+  }
+  
+  options(scipen = 999)
+  
+  TotalFlux = data.frame(Subsystem = SummarizedListModelKnockouts[["WT"]]$Subsystem,
+                         WT = SummarizedListModelKnockouts[["WT"]][["AbsSum"]],
+                         Cyp27a1 = SummarizedListModelKnockouts[["Cyp27a1"]][["AbsSum"]])
+  
+  
+  TotalFlux$SumAllModels = rowSums(TotalFlux[2:ncol(TotalFlux)])
+  TotalFlux$SD = apply(TotalFlux[3:ncol(TotalFlux)-1], 1, sd)
+  TotalFlux = TotalFlux %>% arrange(desc(SD))
+  
+  TotalFlux = TotalFlux[!rowSums(TotalFlux[c(2:ncol(TotalFlux))]) <= 1e-2,] #if the sum across different GEMs is < 1e-2
+  TotalFluxRelContribution = TotalFlux %>%
+    mutate(WT_RelContribution = (WT * 1) / SumAllModels) %>%
+    mutate(Cyp27a1_RelContribution = (Cyp27a1 * 1) / SumAllModels) %>%
+    dplyr::select(Subsystem, WT_RelContribution, Cyp27a1_RelContribution)
+  
+  TotalFluxRelContribution = na.omit(TotalFluxRelContribution)
+  
+  meltedDf = melt(TotalFluxRelContribution)
+  
+  meltedDf$Subsystem = as.factor(meltedDf$Subsystem)
+  
+  if (FilteredDataset) {
+    
+       PathwaysToRemove = c('Cysteine and methionine metabolism',
+                       'Cholesterol metabolism',
+                       'Carnitine shuttle (mitochondrial)',
+                       'Carnitine shuttle (endoplasmic reticular)',
+                       'Carnitine shuttle (cytosolic)',
+                       'Butanoate metabolism',
+                       'Biopterin metabolism',
+                       'Bile acid recycling',
+                       "Pool reactions",
+                       "Transport reactions",
+                       "Miscellaneous",
+                       "Exchange/demand reactions",
+                       "Inositol phosphate metabolism",
+                       "Peptide metabolism",
+                       "Prostaglandin biosynthesis",
+                       "Valine, leucine, and isoleucine metabolism",
+                       "Sulfur metabolism",
+                       "Steroid metabolism",
+                       "Starch and sucrose metabolism",
+                       "Sphingolipid metabolism",
+                       "ROS detoxification",
+                       "Retinol metabolism",
+                       "Protein modification",
+                       "Porphyrin metabolism",
+                       "Heparan sulfate degradation",
+                       "Protein degradation",
+                       "Arachidonic acid metabolism",
+                       "Carnitine shuttle (peroxisomal)",
+                       "Glycerolipid metabolism",
+                       "Glycerophospholipid metabolism",
+                       "Glutathione metabolism",
+                       "Galactose metabolism",
+                       "Aminoacyl-tRNA biosynthesis",
+                       "Alanine, aspartate and glutamate metabolism",
+                       "Amino sugar and nucleotide sugar metabolism",
+                       "Artificial reactions",
+                       "Isolated",
+                       "Glycine, serine and threonine metabolism",
+                       "Leukotriene metabolism",
+                       "Eicosanoid metabolism",
+                       "Pentose phosphate pathway", 
+                       "Nicotinate and nicotinamide metabolism",
+                       "Pentose and glucuronate interconversions",
+                       "Omega-6 fatty acid metabolism",
+                       "N-glycan metabolism",
+                       "Phenylalanine metabolism",
+                       "Lipoic acid metabolism",
+                       "Acylglycerides metabolism",
+                       "Drug metabolism",
+                       "Lysine metabolism",
+                       "Riboflavin metabolism",
+                       "Terpenoid backbone biosynthesis",
+                       "Cholesterol biosynthesis 1 (Bloch pathway)",
+                       "Cholesterol biosynthesis 2",
+                       "Ubiquinone synthesis",
+                       "Heme synthesis",
+                       "Phenylalanine, tyrosine and tryptophan biosynthesis",
+                       "Nucleotide metabolism",
+                       "Pantothenate and CoA biosynthesis",
+                       "Arginine and proline metabolism",
+                       "Folate metabolism",
+                       "Protein assembly",
+                       "Fructose and mannose metabolism",
+                       "Heme synthesis")
+                      
+  
+  meltedDf = meltedDf %>%
+    dplyr::filter(!Subsystem %in% PathwaysToRemove)
+    
+  }
+  
+  
+  if (tissue == "LPS") {
+    
+    WT_col = "#56B4E9"
+    col = "#084594"
+    
+  } else {
+    
+    WT_col = "#E69F00"
+    col = "#FC4E2A"
+    
+    meltedDf = meltedDf %>%
+      dplyr::filter(!Subsystem %in% 'Bile acid biosynthesis')
+    
+  }
+  
+  
+  meltedDf$Subsystem = str_replace_all(meltedDf$Subsystem, 
+                                       "Tricarboxylic acid cycle and glyoxylate/dicarboxylate metabolism",
+                                       "TCA cycle")
+  
+  meltedDf$Subsystem <- factor(meltedDf$Subsystem, levels=rev(c("Bile acid biosynthesis",
+                                                                setdiff(meltedDf$Subsystem, "Bile acid biosynthesis"))))
+  
+  
+  
+  relContribPlot = ggplot(meltedDf, aes(x=Subsystem, y=value, fill=variable))+
+    geom_bar(position='stack', stat="identity", color="black", linewidth=0.5, width=0.7) +
+    coord_flip() +
+    scale_fill_manual(values=c("WT_RelContribution" = WT_col, # explicitly map color to the factor
+                               "Cyp27a1_RelContribution" = col),
+                      labels = c('WT', 'Cyp27a1 KO')) + # explicitly change legend text
+    theme_minimal() +
+    theme(axis.text.x = element_text(face = "bold", size = 14),
+          axis.text.y = element_text(face = "bold", size = 8),
+          axis.title = element_text(face = "bold", size = 14),
+          legend.title = element_text(face = "bold", size = 10),
+          legend.text = element_text(face = "bold", size = 10),
+          legend.position = "right",
+          legend.direction = "vertical", 
+          title = element_text(face = "bold")) +
+    labs(y = "Relative Flux Contribution (FBA)", x = NULL, title = description) +
+    guides(fill=guide_legend(title="Models:"))
+  
+  
+  res = list(TotalFlux, relContribPlot)
+  names(res) = c("TableSummedFluxes", "CombinedPlot")
+  
+  return(res)
+  
+}
+```
+
+## Call the `FunRelativeContribWithKnockouts` function
+
+The dataframe is stored as 1st element, whereas the plot is stored as a 2nd element in the list returned by the function.
+We observe a reduced flux contribution in bile acid synthesis pathway for the KO model.
+
+``` {r, message=F}
+LPS_KO_Results = FunRelativeContribWithKnockouts(LPS_Knockout_List, 'LPS', 'LPS WT vs CYP27A1', FilteredDataset=T)
+head(LPS_KO_Results[[1]])
+LPS_KO_Results[[2]]
+```
+
+
+## Loaded packages in this session
+
+``` {r}
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
