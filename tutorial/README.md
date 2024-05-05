@@ -1,1 +1,1 @@
-This folder describes a protocol to perform in silico knockout procedure in metabolic models, with first part done in MATLAB and the second part demonstrated in R.
+This folder describes a protocol to perform in silico knockout procedure in metabolic models, with first part done in MATLAB and the second part demonstrated in R. Users are referred to commence the tutorial by loading the respective models and datasets in an MATLAB environment, and in the second part importing MATLAB-derived results into the R environment for downstream analysis.
