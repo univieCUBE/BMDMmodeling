@@ -1,0 +1,10 @@
+{
+    "salmon_version": "1.5.2",
+    "index": "/scratch/sango/SFB_data/gencode.M27_salmon_1.5.2_index",
+    "libType": "A",
+    "unmatedReads": "/scratch/sango/SFB_data/trimmed_files/BSF_1094_HMTW5BBXY_1#R10_S103685.fastq",
+    "threads": "8",
+    "validateMappings": [],
+    "output": ":/quants/BSF_1094_HMTW5BBXY_1#R10_S103685.fastq_quant",
+    "auxDir": "aux_info"
+}

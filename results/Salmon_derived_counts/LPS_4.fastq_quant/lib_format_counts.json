@@ -1,0 +1,22 @@
+{
+    "read_files": "[ /scratch/sango/SFB_data/trimmed_files/BSF_1094_HMTW5BBXY_1#R10_S103685.fastq ]",
+    "expected_format": "SR",
+    "compatible_fragment_ratio": 1.0,
+    "num_compatible_fragments": 28600866,
+    "num_assigned_fragments": 28600866,
+    "num_frags_with_concordant_consistent_mappings": 28600795,
+    "num_frags_with_inconsistent_or_orphan_mappings": 414,
+    "strand_mapping_bias": 0.000014474912581492622,
+    "MSF": 0,
+    "OSF": 0,
+    "ISF": 0,
+    "MSR": 0,
+    "OSR": 0,
+    "ISR": 0,
+    "SF": 414,
+    "SR": 28600795,
+    "MU": 0,
+    "OU": 0,
+    "IU": 0,
+    "U": 0
+}
