@@ -30,4 +30,6 @@ DESeq2 v1.40.2 <br />
 tximeta v1.18.1 <br />
 clusterProfiler v4.8.2 <br />
 
+Typical install time for the following dependencies: less than 1 hour
+
  
