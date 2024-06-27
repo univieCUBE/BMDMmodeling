@@ -14,6 +14,7 @@ Multiqc v1.16 (source: https://github.com/MultiQC/MultiQC) <br />
 2) In MATLAB environment:
 
 MATLAB v2023a <br />
+MATLAB v2019b (for running fastFVA algorithm) <br />
 RAVEN toolbox v2.8.4 (installation source: https://github.com/SysBioChalmers/RAVEN; includes core software resource: Task-driven Integrative Network Inference for Tissues, tINIT) <br />
 COBRA toolbox v3.4 (installation guide: https://opencobra.github.io/cobratoolbox/stable/installation.html) <br />
 Mouse1 Metabolic Model v1.7.0 (accessible from https://github.com/SysBioChalmers/Mouse-GEM) <br />
