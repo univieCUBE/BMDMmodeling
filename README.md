@@ -1,4 +1,3 @@
-![image](https://github.com/univieCUBE/BMDMmodeling/assets/94118081/807b1caf-49ee-4bcd-a607-54b88b54c58b)# BMDM metabolic modeling paper
 This repository complements the manuscript "Computational modelling reveals and predicts flux differences in nucleotide metabolism in IL-4-treated Cyp27a1-KO bone marrow-derived macrophages". It contains metabolic models, scripts, spreadsheets and a tutorial on how to perform a gene knockout of interest, as well as performing downstream processing and vizualization schemes. 
 
 Major software dependencies:
