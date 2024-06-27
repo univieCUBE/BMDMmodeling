@@ -1,6 +1,6 @@
 # **Repository Description**
 
-This repository complements the manuscript "Computational modelling reveals and predicts flux differences in nucleotide metabolism in IL-4-treated Cyp27a1-KO bone marrow-derived macrophages". It contains metabolic models, scripts, spreadsheets and a tutorial on how to perform a gene knockout of interest, as well as performing downstream processing and vizualization schemes. The work has been performed on Macintosh M1 Pro 2021 machine running OSX Sonoma 14.5. 
+This repository complements the manuscript "Computational modelling reveals and predicts flux differences in nucleotide metabolism in IL-4-treated Cyp27a1-KO bone marrow-derived macrophages". It contains metabolic models, scripts, spreadsheets and a tutorial on how to perform a gene knockout of interest, as well as performing downstream processing and vizualization schemes. The work has been performed on Macintosh M1 Pro 2021 machine running OSX Sonoma 14.5. Expected run time for the demo tutorial: less than 1 hr. Expected run time for the entire analysis: 1-2 days, where the bulk of the resources are used up by the sampling algorithm so it is recommended to use compute cluster to run this part of the analysis.
 
 ## Major software dependencies:
 
