@@ -14,11 +14,11 @@ Multiqc v1.16 <br />
 2) In MATLAB environment:
 
 MATLAB v2023a <br />
-RAVEN toolbox v2.8.4 (includes core software resource: Task-driven Integrative Network Inference for Tissues, tINIT) <br />
-COBRA toolbox v3.4 <br />
+RAVEN toolbox v2.8.4 (installation source: https://github.com/SysBioChalmers/RAVEN; includes core software resource: Task-driven Integrative Network Inference for Tissues, tINIT) <br />
+COBRA toolbox v3.4 (installation guide: https://opencobra.github.io/cobratoolbox/stable/installation.html) <br />
 Mouse1 Metabolic Model v1.7.0 (accessible from https://github.com/SysBioChalmers/Mouse-GEM) <br />
-Gurobi - optimization suite v9.5.2 <br />
-IBM CPLEX v12.10 Optimization Studio <br />
+Gurobi - optimization suite v9.5.2 (installation guide with free academic version: https://www.gurobi.com/academia/academic-program-and-licenses/) <br />
+IBM CPLEX v12.10 Optimization Studio (free academic version: https://www.ibm.com/support/pages/ibm-ilog-optimization-academic-initiative) <br />
 
 
 
