@@ -23,7 +23,7 @@ IBM CPLEX v12.10 Optimization Studio (free academic version: https://www.ibm.com
 
 
 
-3) In R environment:
+3) In R environment (installation either with `install.packages()` or `BiocManager` package):
 
 R v4.3.1 <br />
 DESeq2 v1.40.2 <br />
