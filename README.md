@@ -6,8 +6,8 @@ This repository complements the manuscript "Computational modelling reveals and 
 
 1) Sequence-level analysis:
 
-  STAR v2.7.11a__
-  Salmon v1.10.1__
+  STAR v2.7.11a <br />
+  Salmon v1.10.1 <br />
   FastQC v0.12.1__
   Multiqc v1.16__
 
