@@ -6,10 +6,10 @@ Major software dependencies:
 
 1) Sequence-level analysis:
 
-STAR v2.7.11a
-Salmon v1.10.1
-FastQC v0.12.1
-Multiqc v1.16
+  STAR v2.7.11a
+  Salmon v1.10.1
+  FastQC v0.12.1
+  Multiqc v1.16
 
 2) In MATLAB environment:
 
