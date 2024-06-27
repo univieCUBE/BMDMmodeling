@@ -6,10 +6,10 @@ This repository complements the manuscript "Computational modelling reveals and 
 
 1) Sequence-level analysis:
 
-STAR v2.7.11a <br />
-Salmon v1.10.1 <br />
-FastQC v0.12.1 <br />
-Multiqc v1.16 <br />
+STAR v2.7.11a (source: https://github.com/alexdobin/STAR) <br />
+Salmon v1.10.1 (source: https://combine-lab.github.io/salmon/getting_started/) <br />
+FastQC v0.12.1 (source: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/) <br />
+Multiqc v1.16 (source: https://github.com/MultiQC/MultiQC) <br />
 
 2) In MATLAB environment:
 
