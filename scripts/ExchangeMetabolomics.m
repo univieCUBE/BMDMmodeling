@@ -998,68 +998,6 @@ writetable(CtrlGeneDelFluxSolution, "CtrlGeneDelFluxSolution.xlsx", 'WriteRowNam
 
 
 
-% checking for futile cycles in LPS WT vs GAPDH mutant
-
-% * alternatively, you fix growth rate to the optimum and 
-% PGM to its maximum (1000) and then do an FVA on all other 
-% reactions (or just the one that you are interested in). 
-% You will find that some reactions that were previously 
-% not fixed (when PGM was variable) are now fixed too. Those
-% reactions that became fixed, are part of the cycle. Repeat with PGM fixed to -1000
-
-Gapdh_fba = solveLP(Gapdh_KO_Model, 1) %-0.0011
-solveLP(CobraLPSGapFilledModel, 1) %-0.0013
-
-Gapdh_KO_Model.rxns(Gapdh_KO_Model.c == 1) %MAR00021
-
-Gapdh_KO_Model_futile_cycle = setParam(Gapdh_KO_Model, 'lb', 'MAR00021', 0.0011)
-Gapdh_KO_Model_futile_cycle = setParam(Gapdh_KO_Model_futile_cycle, 'lb', 'MAR04365', 1000)
-
-WT_Model_futile_cycle = setParam(CobraLPSGapFilledModel, 'lb', 'MAR00021', 0.0013)
-WT_Model_futile_cycle = setParam(WT_Model_futile_cycle, 'lb', 'MAR04365', 1000)
-
-
-
-[Gapdh_KO_Model_futile_cycle_minFlux,Gapdh_KO_Model_futile_cycle_maxFlux] = fastFVA(Gapdh_KO_Model_futile_cycle, 90)
-
-[WT_Model_futile_cycle_minFlux,WT_Model_futile_cycle_maxFlux] = fastFVA(WT_Model_futile_cycle, 90)
-
-FVA_Gapdh_KO_LPS_futile_cycle = table(Gapdh_KO_Model_futile_cycle.rxns, ...
-                        Gapdh_KO_Model_futile_cycle.subSystems, ...
-                        Gapdh_KO_Model_futile_cycle_minFlux, ...
-                        Gapdh_KO_Model_futile_cycle_maxFlux, ...
-                        'VariableNames',{'ReactionID','Compartment', 'MinFlux','MaxFlux'})
-                    
-writetable(FVA_Gapdh_KO_LPS_futile_cycle, 'FVA_Gapdh_KO_LPS_futile_cycle.csv')
-
-FVA_WT_Model_futile_cycle = table(WT_Model_futile_cycle.rxns, ...
-                        WT_Model_futile_cycle.subSystems, ...
-                        WT_Model_futile_cycle_minFlux, ...
-                        WT_Model_futile_cycle_maxFlux, ...
-                        'VariableNames',{'ReactionID','Compartment', 'MinFlux','MaxFlux'})
-       
-writetable(FVA_WT_Model_futile_cycle, 'FVA_WT_Model_futile_cycle.csv')
-
-
-
-
-% you remove your carbon source and (say in the mutant) maximise for 
-% PGM—the resulting flux distribution will be a cycle.
-
-
-Gapdh_KO_Model_futile_cycle = setParam(Gapdh_KO_Model, 'eq', 'MAR09034', 0)
-Gapdh_KO_Model_futile_cycle = setParam(Gapdh_KO_Model_futile_cycle, 'obj', 'MAR04365', 1)
-
-fba_futile_gapdh_ko = solveLP(Gapdh_KO_Model_futile_cycle, 1)
-
-FluxTable_futile_gapdh = table(Gapdh_KO_Model_futile_cycle.rxns, ...
-                        fba_futile_gapdh_ko.x, ...
-                        'VariableNames',{'ReactionID', 'Flux'})
-
-
-writetable(FluxTable_futile_gapdh, 'FluxTable_futile_gapdh.xlsx')
-
-
 %%%% write Cobra models to mat
 
 save('IL4Model.mat', "IL4Model")
