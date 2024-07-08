@@ -108,11 +108,10 @@ ggvenn(
   stroke_size = 0.5, set_name_size = 4) + ggtitle("Genes in GEMs")
 
 
-#### ReporterMetabolites analysis ####
 
 par(mfrow=c(3,2))
 
-#### Curated FBA ####
+#### Load pFBA results and annotate them with reaction-level information ####
 
 file.choose()
 
@@ -303,7 +302,7 @@ FunRelativeContrib(LPSGapFilled, IL4Model = IL4GapFilled, ControlModel = CtrlGap
 
 
 #### Curated FVA ####
-#load all 3 datasets containing fluxes for models (IL4RXN etc., plus "reactions" file)
+#load all 3 datasets containing fluxes for models (IL4RXN etc., plus "reactions" file) -> lines 37:43
 options(scipen = 999)
 path = '/Users/rokosango/PhD/MetabModelling/MATLAB_scripts_workspaces/Immunometabolism_models/tINIT_models/NewFVAResults/'
 
@@ -343,7 +342,7 @@ IL4Cpy_WT$Compartment = IL4$Compartment[match(IL4Cpy_WT$ReactionID, IL4$Reaction
 IL4Cpy_KO$Compartment = IL4$Compartment[match(IL4Cpy_KO$ReactionID, IL4$ReactionID)]
 
 
-#### knock-out Fluxes ####
+#### knock-out Fluxes computed with pFBA after in silico deletion ####
 setwd('/Users/rokosango/PhD/MetabModelling/MATLAB_scripts_workspaces/Immunometabolism_models/tINIT_models/GeneKnockoutFluxResults/')
 
 LPSGeneDelFluxSolution = read_excel('LPSGeneDelFluxSolution.xlsx',
@@ -483,7 +482,7 @@ FunRelativeContribWithAllKnockouts = function(ListModelKnockouts, tissue) {
   
   meltedDf$Subsystem = as.factor(meltedDf$Subsystem)
   
-  # for clarity sake; otherwise too many pathways are plotted:
+  # for clarity and plotting sake remove pathways with limited effect; otherwise too many pathways are plotted and figures crammed:
   PathwaysToRemove = c('Cysteine and methionine metabolism',
                        'Cholesterol metabolism',
                        'Carnitine shuttle (mitochondrial)',
@@ -567,10 +566,7 @@ FunRelativeContribWithAllKnockouts = function(ListModelKnockouts, tissue) {
       dplyr::filter(!Subsystem %in% 'Bile acid biosynthesis')
     
   }
-  
-  meltedDf = meltedDf[!grepl("Vitamin", meltedDf$Subsystem),] #for Poster plot
-  meltedDf = meltedDf[!grepl("Fatty", meltedDf$Subsystem),] #for Poster plot
-  meltedDf = meltedDf[!grepl("Glycos", meltedDf$Subsystem),] #for Poster plot
+
   
   
   meltedDf$Subsystem = str_replace_all(meltedDf$Subsystem, 
@@ -667,71 +663,8 @@ LPS_KO_Results = FunRelativeContribWithAllKnockouts(LPS_Knockout_List, 'LPS')
 IL4_KO_Results = FunRelativeContribWithAllKnockouts(IL4_Knockout_List, 'IL4')
 Ctrl_KO_Results = FunRelativeContribWithAllKnockouts(Ctrl_Knockout_List, 'Control')
 
-#### LPS Knockout Fluxes: ####
-# choose: 
-# Bile acid biosynthesis, 
-# Tricarboxylic acid cycle and glyoxylate/dicarboxylate metabolism
-# Pyrimidine metabolism
-# Heme synthesis
 
-InterestingSubs = c("Bile acid biosynthesis", 
-                    "Tricarboxylic acid cycle and glyoxylate/dicarboxylate metabolism",
-                    "Pyrimidine metabolism", "Heme synthesis")
-
-ProcessPlotFun = function(df1, df2, InterestingSubs, gene) {
-  
-   df1 = LPSGapFilled %>%
-    dplyr::filter(Subsystem %in% InterestingSubs) %>%
-    dplyr::group_by(Subsystem) %>%
-    dplyr::summarize(AbsMean = mean(abs(Flux), na.rm = T),
-              SDMean = sd(Flux, na.rm = T))
-   
-  df2 = LPS_Knockout_List[[gene]] %>%
-    dplyr::filter(Subsystem %in% InterestingSubs) %>%
-    dplyr::group_by(Subsystem) %>%
-    dplyr::summarize(AbsMean = mean(abs(Flux), na.rm = T),
-              SDMean = sd(Flux, na.rm = T))
-  
-  combined = rbind(df1, df2)
-  
-  combined$Subsystem = str_replace_all(combined$Subsystem, 
-                                       "Tricarboxylic acid cycle and glyoxylate/dicarboxylate metabolism",
-                                       "TCA cycle")
-  
-  combined$Model = rep(c("WT", "Cyp27a1"), each = 4)
-  combined$Model = as.factor(combined$Model)
-  combined$Subsystem = str_wrap(combined$Subsystem, width = 10)
-  
-  ggplot(combined, aes(x = Subsystem, y = AbsMean,
-                 fill=Model)) +
-    geom_bar(stat = "identity", color = "black", 
-             position = position_dodge()) +
-    scale_fill_manual(values=c("WT" = "#1B9E77", #D95F02
-                               'Cyp27a1' = "#D95F02"), # 1B9E77
-                      labels = c('Cyp27a1_KO', 'WT')) +
-    geom_errorbar(aes(ymin=(AbsMean - SDMean), 
-                      ymax=(AbsMean + SDMean)), 
-                      width=.2,
-                      position=position_dodge(.9)) +
-    #coord_flip() +
-    labs(x = NULL, y = "Flux") +
-    theme_bw() +
-    theme(axis.text = element_text(face = "bold", size = 15),
-          axis.title = element_text(face = "bold", size = 15),
-          legend.title = element_text(face = "bold", size = 10),
-          legend.text = element_text(face = "bold", size = 10),
-          legend.position = c(0.15, 0.9),
-          legend.background = element_rect(fill = "white", color = "black"))
-    
-  
-}
-
-ProcessPlotFun(LPSGapFilled, LPS_Knockout_List[["Cyp27a1"]],
-               InterestingSubs, 'Cyp27a1')
-
-
-
-#### focus on specific subsystems and reactions within subsystems of interest:
+#### focus on specific subsystems and reactions within subsystems of interest for both Gapdh and Cyp27a1 knockout models:
 
 
 grabFBAFVA = function(wtModel, koModel, fvaWtModel, 
@@ -766,13 +699,6 @@ grabFBAFVA = function(wtModel, koModel, fvaWtModel,
   
   fvaKoModel = fvaKoModel %>%
     dplyr::filter(ReactionID %in% KoFindRxns)
-
-  # if (WhichGene == "Gapdh_KO") {
-  # 
-  #   fvaKoModel = fvaKoModel %>%
-  #     dplyr::rename(minFlux = MinFlux) %>%
-  #     dplyr::rename(maxFlux = MaxFlux)
-  # }
 
 
   dfKo = cbind(koModel, fvaKoModel)
@@ -832,8 +758,13 @@ grabFBAFVA(wtModel = LPSGapFilled, koModel = LPS_Knockout_List[["Gapdh"]],
            WhichGene = "Gapdh_KO", Condition = "LPS")
 
 
-#r0191 = PFK
 #### Random sampling by ACHR ####
+# load up the data: reaction IDs & flux matrices
+#find reactions that are shared across LPS vs LPS GAPDH KO, and IL4 vs IL4 CYP KO
+#arrange rows in both conditions (10 frames per model)
+# for each output file (10), find mean of each sampled flux
+# explore densities of those reactions (side by side densities per model)
+# use Kruskal–Wallis test to find significant reactions
 
 LPSSampledModelRxnID = read.table('~/PhD/MetabModelling/MATLAB_scripts_workspaces/SamplingResults/LPSModelSamplingRxns.txt', 
                                   col.names = "Reaction")
@@ -868,20 +799,12 @@ filter = function(df) {
 
 path = '~/PhD/MetabModelling/MATLAB_scripts_workspaces/SamplingResults/LPS/'
 
-
-# load up the data: reaction IDs & flux matrices
-#find reactions that are shared across LPS & IL4
-#arrange rows in both conditions (10 frames per model)
-# for each output file (10), find mean of each sampled flux
-# explore densities of those reactions (side by side densities per model)
-#focus on reactions in glycolysis, tca, oxphos, ppp and arginine pathways
-# use Kruskal–Wallis test to find significant reactions
 LPSdata_files <- list.files(paste0(path))  # Identify file names
 LPSdata_files
 
 
-for(i in 1:length(LPSdata_files)) {                              # Head of for-loop
-  assign(paste0("LPSSamplingFile_", i),                                   # Read and store data frames
+for(i in 1:length(LPSdata_files)) {                             
+  assign(paste0("LPSSamplingFile_", i),                                  
          read.csv(paste0(path,
                           LPSdata_files[i]),
                    header = F, 
@@ -913,8 +836,8 @@ path = '~/PhD/MetabModelling/MATLAB_scripts_workspaces/SamplingResults/IL4/'
 IL4data_files <- list.files(paste0(path))  # Identify file names
 IL4data_files
 
-for(i in 1:length(IL4data_files)) {                              # Head of for-loop
-  assign(paste0("IL4SamplingFile_", i),                                   # Read and store data frames
+for(i in 1:length(IL4data_files)) {                              
+  assign(paste0("IL4SamplingFile_", i),
          read.csv(paste0(path,
                          IL4data_files[i]),
                   header = F, 
@@ -938,15 +861,15 @@ for (i in 1:length(IL4_list)) {
 
 IL4SamplingMeanDf = Reduce(`+`, IL4_list)/length(IL4_list)
 
-# LPS Knockout
+# LPS CYP Knockout
 
 path = '~/PhD/MetabModelling/MATLAB_scripts_workspaces/SamplingResults/KO_LPS/'
 
-KO_LPSdata_files <- list.files(paste0(path))  # Identify file names
+KO_LPSdata_files <- list.files(paste0(path))
 KO_LPSdata_files
 
-for(i in 1:length(KO_LPSdata_files)) {                              # Head of for-loop
-  assign(paste0("KO_LPSSamplingFile_", i),                                   # Read and store data frames
+for(i in 1:length(KO_LPSdata_files)) {                              
+  assign(paste0("KO_LPSSamplingFile_", i),                              
          read.csv(paste0(path,
                          KO_LPSdata_files[i]),
                   header = F, 
@@ -971,7 +894,7 @@ for (i in 1:length(KO_LPS_list)) {
 #each sampled flux for each cell across 10 list elements
 KO_LPSSamplingMeanDf = Reduce(`+`, KO_LPS_list)/length(KO_LPS_list)
 
-# IL4 Knockout
+# IL4 CYP Knockout
 
 path = '~/PhD/MetabModelling/MATLAB_scripts_workspaces/SamplingResults/KO_IL4/'
 
@@ -1049,29 +972,21 @@ concat_sampling_dfs = function(sampling_mean_df1,
   
 }
 
-InterestingSubsystems = c("Bile acid biosynthesis",
-                          "Heme synthesis",
-                          "Pyrimidine metabolism",
-                          "Tricarboxylic acid cycle and glyoxylate/dicarboxylate metabolism",
-                          "Glycolysis / Gluconeogenesis")
 
 
-combined_mean_dfs = concat_sampling_dfs(LPSSamplingMeanDf, KO_LPSSamplingMeanDf,
+combined_mean_dfs = concat_sampling_dfs(LPSSamplingMeanDf, KO_Gapdh_LPS_SamplingDf,
                          "LPS_Sample_", "KO_LPS_Sample_",
-                         LPSGapFilled, InterestingSubsystems)
+                         LPSGapFilled, "Glycolysis / Gluconeogenesis")
 
 
 combined_mean_dfs_IL4 = concat_sampling_dfs(IL4SamplingMeanDf, KO_IL4SamplingMeanDf,
                                       "IL4_Sample_", "KO_IL4_Sample_",
-                                      IL4GapFilled, c("Glycolysis / Gluconeogenesis",
-                                                      "Tricarboxylic acid cycle and glyoxylate/dicarboxylate metabolism",
-                                                      "Purine metabolism",
+                                      IL4GapFilled, c("Purine metabolism",
                                                       "Pyrimidine metabolism"))
 
 
 
-#function for generating density plots from significant
-#reactions sampled from 5 different subsystems
+#function for generating density plots from significant sampled reactions 
 
 densityplotsfun = function(sampling_mean_df1, 
                            sampling_mean_df2,
@@ -1190,9 +1105,6 @@ checkGapdhDensities = function(wtModelSampling,
     summarise(mean = mean(value)) %>%
     as.numeric()
   
-  #WT_col = "#56B4E9"
-  #col = "#C6DBEF"
-  
   ggplot(test_combined, aes(x = value, fill = Model)) +
     scale_fill_manual(values=c("WT" = "#56B4E9",
                                "Gapdh_KO" = "#084594")) + 
@@ -1232,154 +1144,6 @@ for (i in 1:length(unique_rxns)){
                                         LPSGapFilled, LPS_Knockout_List[["Cyp27a1"]],
                                         unique_rxns[i]))
 }
-
-
-arrangedplots = function(sampling_mean_df1, 
-          sampling_mean_df2,
-          subsystem_name,
-          subsystem_list, #subsystem = "HemeSynth", "TCAMet", "PyrMet" from SpecFluxesFun. No "BileAcid"
-          model1Factor,
-          model2Factor,
-          FBAModel1, 
-          FBAModel2,
-          nrow) { 
-  
-          plotlist = list()
-  
-          #unique_rxns = unique(subsystem_list[[2]]$ReactionID)
-          unique_rxns = unique(sort(subsystem_list[[2]]$ReactionID))
-          
-    for (i in 1:length(unique_rxns)){
-    
-    plotlist[[i]] = print(densityplotsfun(sampling_mean_df1,
-                                          sampling_mean_df2,
-                                          unique_rxns[i], 
-                                          model1Factor, model2Factor, 
-                                          FBAModel1, FBAModel2,
-                                          unique_rxns[i]))
-  }
-  
-  fig = ggarrange(plotlist=plotlist,
-                  labels = letters[1:length(plotlist)],
-                  ncol = 2, nrow = nrow,
-                  common.legend = T)
-  
-  
-  fig
-  #require(grid)
-  anotfig = annotate_figure(fig, 
-                            left = textGrob("Density", rot = 90, vjust = 1, gp = gpar(cex = 0.8)),
-                            bottom = textGrob("Sampled Flux", gp = gpar(cex = 0.8)),
-                            top = textGrob(subsystem_name))
-  
-  return(anotfig)
-  
-}
-
-
-arrangedplots(LPSSamplingMeanDf,KO_LPSSamplingMeanDf,"TCA Cycle",
-              TCAMet, "WT", "Cyp27a1_KO", LPSGapFilled,
-              LPS_Knockout_List[["Cyp27a1"]], 4)
-
-arrangedplots(LPSSamplingMeanDf,KO_LPSSamplingMeanDf,"Pyrimidine Metabolism",
-              PyrMet, "WT", "Cyp27a1_KO", LPSGapFilled,
-              LPS_Knockout_List[["Cyp27a1"]], 7)
-
-arrangedplots(LPSSamplingMeanDf,KO_LPSSamplingMeanDf, "Heme synthesis",
-              HemeSynth, "LPS", "Cyp27a1_KO", LPSGapFilled,
-              LPS_Knockout_List[["Cyp27a1"]], 1)
-
-
-
-#from concatenated LPS + IL4 sampling dataset find reactions 
-#that are also found in FVA dataset
-
-FVAfiltSamplingDf = df %>%
-  dplyr::filter(rownames(.) %in% FVACombined$ReactionID)
-
-#PYK - MAR04358 - pyruvate kinase reaction:
-#it is not in FVA dataset as it is only captured in LPS (not in Control or IL4) but with wide flux range {1, 1000}
-# hence it is not in the FBA-FVA figure. but still it would be nice to show last step in
-# glycolysis where ATP is being made:
-
-FVAfiltSamplingDf['MAR04358', ] = df['MAR04358', ] #add reaction PYK
-FVAfiltSamplingDf['MAR04379', ] = df['MAR04379', ] #add reaction PFK
-FVAfiltSamplingDf['MAR04368', ] = df['MAR04368', ] #add reaction PGK
-FVAfiltSamplingDf['MAR04394', ] = df['MAR04394', ] #add reaction HEX1
-
-FVAfiltSamplingDf = FVAfiltSamplingDf[!FVAfiltSamplingDf$ReactionName %in% "r0173",]  #remove reaction r0173 (peroxisomal lactate dehydrogenase)
-
-
-df[!(row.names(df) %in% c("1","2")),]
-
-arrangedplots = function(x, subsystem, nrow) {
- 
-   plotlist = list()
-   
-   filtered = x %>%
-     dplyr::filter(Subsystem == subsystem)
-  
-  for (i in 1:dim(filtered)[1]) {
-    
-    plotlist[[i]] = print(densityplotsfun(rownames(filtered)[i], filtered[i, "ReactionName"]))
-    
-  }
-   
-   fig = ggarrange(plotlist=plotlist,
-                   labels = letters[1:length(plotlist)],
-                   ncol = 2, nrow = nrow, common.legend = T)
-   
-   fig
-   #require(grid)
-   anotfig = annotate_figure(fig, 
-                left = textGrob("Density", rot = 90, vjust = 1, gp = gpar(cex = 0.8)),
-                bottom = textGrob("Sampled Flux", gp = gpar(cex = 0.8)),
-                 top = textGrob(subsystem))
-   
-   return(anotfig)
-}
-
-FVAfiltSamplingDf %>% 
-  group_by(Subsystem) %>%
-  summarise(no_rows = length(Subsystem))
-
-
-#Subsystem                                                        no_rows
-#<fct>                                                                  <int>
-#1 Arginine and proline metabolism                                        6
-#2 Glycolysis / Gluconeogenesis                                           7
-#3 Oxidative phosphorylation                                              2
-#4 Pentose phosphate pathway                                              8
-#5 Tricarboxylic acid cycle and glyoxylate/dicarboxylate metabolism       2
-
-arrangedplots(FVAfiltSamplingDf, "Arginine and proline metabolism", 3)
-arrangedplots(FVAfiltSamplingDf, "Glycolysis / Gluconeogenesis", 5)
-arrangedplots(FVAfiltSamplingDf, "Pentose phosphate pathway", 4)
-arrangedplots(FVAfiltSamplingDf, 
-              "Tricarboxylic acid cycle and glyoxylate/dicarboxylate metabolism", 2)
-arrangedplots(FVAfiltSamplingDf, "Oxidative phosphorylation", 2)
-
-
-
-#this is just to compare means and variances LPS vs IL4
-LPSSamplingMeanDf$MeanLPS = apply(LPSSamplingMeanDf, 1, mean)
-IL4SamplingMeanDf$MeanIL4 = apply(IL4SamplingMeanDf, 1, mean)
-LPSSamplingMeanDf$VarLPS = apply(LPSSamplingMeanDf, 1, var)
-IL4SamplingMeanDf$VarIL4 = apply(LPSSamplingMeanDf, 1, var)
-
-SamplingDfCombined = data.frame(cbind(
-                           rownames(LPSSamplingMeanDf),
-                           LPSSamplingMeanDf$MeanLPS,
-                           IL4SamplingMeanDf$MeanIL4,
-                           LPSSamplingMeanDf$VarLPS,
-                           IL4SamplingMeanDf$VarIL4))
-
-names(SamplingDfCombined) = c(
-  "ReactionID", "MeanLPS", "MeanIL4", "VarLPS", "VarIL4"
-)
-
-
-rownames(SamplingDfCombined) = rownames(LPSSamplingMeanDf)
 
 
 ######### Cyp27a1 macs validation with metabolomics #########
@@ -1579,47 +1343,6 @@ RepeatHILICList = AnalyzeFun(RepeatHILIC, "RepeatHILIC")
 RepeatRPList = AnalyzeFun(RepeatRP, "RepeatRP")
 
 
-# plotting metabolites from CYP experiments with IL-4 focus (Figure 6):
-PlotCombinedMets = function(Metabolite, whichDataset) {
-  
-  if (whichDataset == "HILIC") {
-    
-    HILICList[["BoxPlotsList"]][[Metabolite]][["data"]]$Experiment = rep("1st_experiment")
-    RepeatHILICList[["BoxPlotsList"]][[Metabolite]][["data"]]$Experiment = rep("2nd_experiment")
-    test_df = rbind(HILICList[["BoxPlotsList"]][[Metabolite]][["data"]], 
-                    RepeatHILICList[["BoxPlotsList"]][[Metabolite]][["data"]])
-    test_df$Metabolite = Metabolite
-    
-  } else {
-    
-    RPList[["BoxPlotsList"]][[Metabolite]][["data"]]$Experiment = rep("1st_experiment")
-    RepeatRPList[["BoxPlotsList"]][[Metabolite]][["data"]]$Experiment = rep("2nd_experiment")
-    test_df = rbind(RPList[["BoxPlotsList"]][[Metabolite]][["data"]], 
-                    RepeatRPList[["BoxPlotsList"]][[Metabolite]][["data"]])
-    test_df$Metabolite = Metabolite
-  }
-  
-  ggplot(test_df, aes(x=Group, y=ZScore, fill=Group)) +
-    geom_boxplot(position=position_dodge(1)) +
-    geom_dotplot(binaxis='y', stackdir='center',
-                 position=position_dodge(1), dotsize = 0.8) +
-    scale_fill_manual(
-      values=c("IL-4-KO" = "#FC4E2A",
-               "IL-4-WT" = "#E69F00")) +
-    labs(x = NULL, y = NULL, title = test_df$Metabolite[1]) +
-    theme(legend.title = element_text(face = "bold"),
-          axis.text.x = element_blank(),
-          strip.text.x = element_text(
-            size = 16, color = "black", face = "bold.italic"),
-          legend.position = "none") +
-    facet_wrap(vars(Experiment)) +
-    my.theme
-}
-#check that it works:
-PlotCombinedMets("Guanosine", "RP")
-PlotCombinedMets("Serine", "HILIC")
-
-
 ############################
 #### GAPDH metabolomics ####
 ############################
@@ -1627,8 +1350,6 @@ PlotCombinedMets("Serine", "HILIC")
 
 
 df = read.csv(paste0(path, "/GAPDH_experiment.csv"))
-
-#df = df %>% dplyr::filter(Group == "IL-4")
 
 dfNum = df %>%
   dplyr::select(-Sample, -Phenotype, -Group)
