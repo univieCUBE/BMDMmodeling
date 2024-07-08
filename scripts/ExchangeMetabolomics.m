@@ -38,11 +38,6 @@ LPSModel_v2 = addRxnsGenesMets(LPSModel_v2, mouseGEM, 'MAR09451', true);
 
 constructEquations(LPSModel_v2, 'MAR09259') % already in the model
 
-% conclusion: get an error when trying to add all reactions to model,
-% error message is that there are some reactions that are not in source
-% model. if I then do it manually, per rxns, then everything works apart
-% from MAR09013 and MAR09259 that are already in the model. WTF?????
-
 
 
 %2. 
@@ -57,10 +52,6 @@ LPSModel_v2_produce_values =  ExchangeRxnsLPS.UB
 
 LPSModel_v2_updated = setParam(LPSModel_v2, 'ub', LPS_rxnNameList, LPSModel_v2_produce_values)
 LPSModel_v2_updated = setParam(LPSModel_v2_updated, 'lb', LPS_rxnNameList, LPSModel_v2_consume_values)
-
-%print Constraints prints super weird bounds, eg. MAR10265 in
-%LPSModel_v2_updated. -1000,1000 instead of 0,0. This is bc this reaction
-%is "transport reaction" not "Exchange reaction" in the model. WTF??!!!
 
 
 solveLP(LPSModel_v2_updated) % -1, 'The problem is infeasible'
@@ -475,11 +466,6 @@ IL4Model_v2 = addRxnsGenesMets(IL4Model_v2, mouseGEM, 'MAR09247', true);
 constructEquations(IL4Model_v2, 'MAR11438') % already in the model
 constructEquations(IL4Model_v2, 'MAR12200') % already in the model
 
-% conclusion: get an error when trying to add all reactions to model,
-% error message is that there are some reactions that are not in source
-% model. if I then do it manually, per rxns, then everything works apart
-% from MAR09013 and MAR09259 that are already in the model. WTF?????
-
 [IL4exchangeRxns,IL4exchangeRxnsIndexes]=getExchangeRxns(IL4Model_v2,'both')
 
 writecell(IL4exchangeRxns, 'ExchangeRxns_Sinks_-0.01_IL4.xlsx') % file which contains all rxns and fluxes
@@ -605,13 +591,6 @@ writetable(ExMetIL4GapFilledParsiFluxTableCurated, 'IL4FluxTable.xlsx')
 
 %% Control sink constraint
 Rxns_to_add = string(ExMetCtrl.Rxn_ID)
-
-%%% important note:
-% if you supply a list of reactions to this function, if ANY of the
-% reactions are already in the model, the function crashes. meaning, if
-% within those reactions there are novel ones, they won't be added and will
-% be missed by this tool. Hence, I need to manually check membership of
-% each reaction. another WTF!!!!!
 
 % LPS reactions that need to be added and then closed since they're only
 % for LPS
